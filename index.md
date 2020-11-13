@@ -1,101 +1,276 @@
 # GET
-existing article, no translations
-`GET /jsonapi/node/article/{id}`
 
-existing article, default translation
-`GET /jsonapi/node/article/{id}`
+* Existing article, no translations:
+```
+GET /jsonapi/node/article/{id}
 
-existing article, non-default translation
-Using canonical URL
+200 OK
+```
+
+* Existing article, default translation:
+```
+GET /jsonapi/node/article/{id}
+
+200 OK
+```
+
+* Existing article, non-default translation, using canonical URL:
 ```
 GET /jsonapi/node/article/{id}
 Accept-Language: fr
 
-// If it exists
-Content-Language: fr
-Content-Location: /jsonapi/node/article/{id}?tbd=fr
+200 OK
 
-// If it doesn't exist
-Content-Language: en-US
+// If translation exists:
+Content-Language: fr
+Content-Location: /jsonapi/node/article/{id}?lang=fr
+
+// If translation does not exist:
+Content-Language: en
 ```
 
-Using translation-specific URL
+* Existing article, non-default translation, using translation-specific URL:
 ```
-GET /jsonapi/node/article/{id}?tbd=fr
+GET /jsonapi/node/article/{id}?lang=fr
 
-// If it exists
+// If translation exists:
+200 OK
 Content-Language: fr
 
-// If it doesn't exist
+// If translation does not exist:
 404 Not found
 ```
 
 # POST
-new article in default language
-`POST /jsonapi/node/article`
 
-new article in non-default language
+* New article in default language:
 ```
+POST /jsonapi/node/article
+{type: "node--article"}
+```
+
+* New article in non-default language:
+```
+POST /jsonapi/node/article
+{type: "node--article", attributes: {langcode: "fr", ...}}
+
+201 Created
+Location: /jsonapi/node/article/{id}
+```
+```
+// The "Content-Language" header is just an alternative way to specify the
+
+// entity "langcode" field.
 POST /jsonapi/node/article
 Content-Language: fr
+{type: "node--article", attributes: {...}}
 
-// plach notes that the language is a field value
-
-// Alternative
-POST /jsonapi/node/article
-{type: "node--article", attributes: {langcode: "fr"}}
-
-// If the above is permitted... the following must return an error
-POST /jsonapi/node/article
-Content-Language: en-US
-{type: "node--article", attributes: {langcode: "fr"}}
-
-// gabe wonders if it should be permitted to provide a langcode attribute without a content-language header
-
-// The case where there is no langcode and no content-language header should use the default behavior from /admin/config/regional/content-language
-POST /jsonapi/node/article
-{type: "node--article"}
+201 Created
+Location: /jsonapi/node/article/{id}
 ```
 ```
+// A mismatch between those two MUST return an error:
+POST /jsonapi/node/article
+Content-Language: en
+{type: "node--article", attributes: {langcode: "fr"}}
+
+400 Bad Request
+```
+```
+// The case where there is no "langcode" and no "content-language" header should
+// use the default behavior configured at "/admin/config/regional/content-language".
 POST /jsonapi/node/article
 {type: "node--article"}
 
-204 Created
+201 Created
 Location: /jsonapi/node/article/{id}
 ```
 
-new translation of existing article
+* New translation of existing article, only translatable field values can be
+posted in this case:
 ```
+
 POST /jsonapi/node/article/{id}
 Content-Language: fr
+{attributes: {...}}
 
-// plach notes that he fears that using the URL above will cause a conflict in the future if JSON:API supports other kinds of entity variants
-// gabe thinks it would be okay to use custom headers in the case above
+201 Created
+Location: /jsonapi/node/article/{id}?lang=fr
+```
+```
+// Alternatively:
+POST /jsonapi/node/article/{id}
+{attributes: {langcode: "fr", ...}}
 
-204 Created
-Location: /jsonapi/node/article/{id}?tbd=fr
+201 Created
+Location: /jsonapi/node/article/{id}?lang=fr
+```
+```
+// Either "article" or "field_event_date" are not translatable:
+POST /jsonapi/node/article/{id}
+Content-Language: fr
+{attributes: {field_event_date: "2020-11-16", ...}}
+
+400 Bad Request
+```
+```
+// A French translation already exsists:
+POST /jsonapi/node/article/{id}
+Content-Language: fr
+{attributes: {...}}
+
+409 Conflict
+```
+```
+// Plach notes that he fears that using the URL above will cause a conflict in
+// the future if JSON:API supports other kinds of entity variants.
+// Gabe thinks it would be okay to use custom headers in the case above, for
+// instance:
+POST /jsonapi/node/article/{id}
+Content-Language: fr
+X-Drupal-Entity-Variant-User: 2
+
+201 Created
+Location: /jsonapi/node/article/{id}?lang=fr&user=2
 ```
 
-new translation of existing article with non-default source
+* New translation of existing article with non-default source, only translatable
+field values can be posted in this case:
 ```
 POST /jsonapi/node/article/{id}
 Content-Language: nl
-{type: "node--article": id: "id", attributes: {content_translation_source: "fr"}}
+{attributes: {content_translation_source: "fr", ...}}
 
-// plach notes that he fears that using the URL above will cause a conflict in the future if JSON:API supports other kinds of entity variants
-// gabe thinks it would be okay to use custom headers in the case above
-
-204 Created
-Location: /jsonapi/node/article/{id}?tbd=nl
+201 Created
+Location: /jsonapi/node/article/{id}?lang=nl
 ```
 
 # PATCH
-change article, no translations
-change article, w/ translations, default translation
-change article, w/ translations, non-default translation
+
+* Change article, no translations:
+```
+
+PATCH /jsonapi/node/article/{id}
+{attributes: {...}}
+
+200 OK
+```
+
+* Change article, default translation:
+```
+
+PATCH /jsonapi/node/article/{id}
+{attributes: {...}}
+
+200 OK
+```
+
+* Change article, non-default translation, only translatable field values can be
+posted in this case:
+```
+
+PATCH /jsonapi/node/article/{id}?lang=fr
+{attributes: {...}}
+
+// If French translation exists:
+200 OK
+
+// If French translation does not exist:
+404 Not Found
+
+// If an unstranslatable field value is specified:
+400 Bad Request
+```
+```
+// A mismatch between "langcode" and/or the Content-Language header and the
+// translation language MUST result in an error. Translation language change is
+// not supported at the moment:
+PATCH /jsonapi/node/article/{id}?lang=fr
+Content-Language: en
+{attributes: {...}}
+
+400 Bad Request
+```
+```
+PATCH /jsonapi/node/article/{id}?lang=fr
+{attributes: {langcode: "en", ...}}
+
+400 Bad Request
+```
+```
+PATCH /jsonapi/node/article/{id}?lang=fr
+Content-Language: fr
+{attributes: {langcode: "en", ...}}
+
+400 Bad Request
+```
+```
+PATCH /jsonapi/node/article/{id}?lang=fr
+Content-Language: fr
+{attributes: {langcode: "fr", ...}}
+
+200 OK
+```
 
 # DELETE
-remove article, no translations
-remove article, all translations
-remove default translation of existing article
-remove non-default translation of existing article
+
+* Remove article, no translations:
+```
+
+DELETE /jsonapi/node/article/{id}
+
+200 OK
+```
+
+* Remove article, all translations:
+```
+
+DELETE /jsonapi/node/article/{id}
+
+200 OK
+```
+```
+DELETE /jsonapi/node/article/{id}
+Content-Language: en
+
+// If the default translation language is English:
+200 OK
+
+// If the default translation language is not English:
+400 Bad Request
+```
+
+* Removing the default translation of an existing article is not supported:
+```
+
+DELETE /jsonapi/node/article/{id}?lang=en
+
+400 Bad Request
+```
+
+* Remove non-default translation of existing article:
+
+```
+
+DELETE /jsonapi/node/article/{id}?lang=fr
+
+// If French translation exists:
+200 OK
+
+// If French translation does not exist:
+404 Not Found
+```
+```
+// Specifying a Content-Language header does not make sense in this case, but if
+// it is provided it MUST match the translation language:
+DELETE /jsonapi/node/article/{id}?lang=fr
+Content-Language: en
+
+400 Bad Request
+```
+```
+DELETE /jsonapi/node/article/{id}?lang=fr
+Content-Language: fr
+
+200 OK
+```
