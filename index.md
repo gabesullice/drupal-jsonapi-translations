@@ -19,14 +19,31 @@ GET /jsonapi/node/article/{id}
 GET /jsonapi/node/article/{id}
 Accept-Language: fr
 
-200 OK
-
 // If translation exists:
+200 OK
 Content-Language: fr
 Content-Location: /jsonapi/node/article/{id}?lang=fr
 
 // If translation does not exist:
+// option a)
+// provide a default without redirecting
+200 OK
 Content-Language: en
+
+// option b)
+// do not provide a default or redirect, simply provide alternatives
+406 Not acceptable
+Link: </jsonapi/node/article/{id}?lang=en>; rel="alternate" hreflang="en"
+Link: </jsonapi/node/article/{id}?lang=nl>; rel="alternate" hreflang="nl"
+{links: {// same links, in json}}
+
+// option c)
+// redirect to a default and also provide alternatives
+300 Multiple choices
+Location: /jsonapi/node/article/{id}?lang=en
+Link: </jsonapi/node/article/{id}?lang=en>; hreflang="en"
+Link: </jsonapi/node/article/{id}?lang=nl>; hreflang="nl"
+{links: {// same links, in json}}
 ```
 
 * Existing article, non-default translation, using translation-specific URL:
@@ -111,7 +128,7 @@ POST /jsonapi/node/article/{id}
 Content-Language: fr
 {attributes: {field_event_date: "2020-11-16", ...}}
 
-400 Bad Request
+422 Unprocessable entity
 ```
 ```
 // A French translation already exsists:
@@ -179,7 +196,7 @@ PATCH /jsonapi/node/article/{id}?lang=fr
 404 Not Found
 
 // If an unstranslatable field value is specified:
-400 Bad Request
+422 Unprocessable entity
 ```
 ```
 // A mismatch between "langcode" and/or the Content-Language header and the
@@ -210,6 +227,9 @@ Content-Language: fr
 {attributes: {langcode: "fr", ...}}
 
 200 OK
+// or
+204 No content
+// see https://jsonapi.org/format/#crud-updating-responses-204
 ```
 
 # DELETE
@@ -219,7 +239,7 @@ Content-Language: fr
 
 DELETE /jsonapi/node/article/{id}
 
-200 OK
+204 No content
 ```
 
 * Remove article, all translations:
@@ -227,14 +247,14 @@ DELETE /jsonapi/node/article/{id}
 
 DELETE /jsonapi/node/article/{id}
 
-200 OK
+204 No content
 ```
 ```
 DELETE /jsonapi/node/article/{id}
 Content-Language: en
 
 // If the default translation language is English:
-200 OK
+204 No content
 
 // If the default translation language is not English:
 400 Bad Request
@@ -255,7 +275,7 @@ DELETE /jsonapi/node/article/{id}?lang=en
 DELETE /jsonapi/node/article/{id}?lang=fr
 
 // If French translation exists:
-200 OK
+204 No content
 
 // If French translation does not exist:
 404 Not Found
@@ -272,5 +292,5 @@ Content-Language: en
 DELETE /jsonapi/node/article/{id}?lang=fr
 Content-Language: fr
 
-200 OK
+204 No content
 ```
