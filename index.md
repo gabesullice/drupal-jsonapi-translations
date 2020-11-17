@@ -66,6 +66,7 @@ POST /jsonapi/node/article
 {type: "node--article", attributes: {...}}
 
 201 Created
+Location: /jsonapi/node/article/{id}
 ```
 
 * New article in non-default language:
