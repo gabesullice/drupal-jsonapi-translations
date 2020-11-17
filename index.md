@@ -14,7 +14,7 @@ GET /jsonapi/node/article/{id}
 200 OK
 ```
 
-* Existing article, non-default translation, using canonical URL:
+* Existing article, non-default translation, using the canonical URL:
 ```
 GET /jsonapi/node/article/{id}
 Accept-Language: fr
@@ -22,7 +22,7 @@ Accept-Language: fr
 // If translation exists:
 200 OK
 Content-Language: fr
-Content-Location: /jsonapi/node/article/{id}?lang=fr
+Location: /jsonapi/node/article/{id}?lang=fr
 
 // If translation does not exist:
 // option a)
@@ -46,7 +46,7 @@ Link: </jsonapi/node/article/{id}?lang=nl>; hreflang="nl"
 {links: {// same links, in json}}
 ```
 
-* Existing article, non-default translation, using translation-specific URL:
+* Existing article, non-default translation, using a translation-specific URL:
 ```
 GET /jsonapi/node/article/{id}?lang=fr
 
@@ -63,7 +63,9 @@ Content-Language: fr
 * New article in default language:
 ```
 POST /jsonapi/node/article
-{type: "node--article"}
+{type: "node--article", attributes: {...}}
+
+201 Created
 ```
 
 * New article in non-default language:
@@ -76,7 +78,6 @@ Location: /jsonapi/node/article/{id}
 ```
 ```
 // The "Content-Language" header is just an alternative way to specify the
-
 // entity "langcode" field.
 POST /jsonapi/node/article
 Content-Language: fr
@@ -91,11 +92,11 @@ POST /jsonapi/node/article
 Content-Language: en
 {type: "node--article", attributes: {langcode: "fr"}}
 
-400 Bad Request
+422 Unprocessable entity
 ```
 ```
-// The case where there is no "langcode" and no "content-language" header should
-// use the default behavior configured at "/admin/config/regional/content-language".
+// If no "langcode" and no "content-language" header are specified, the default
+// logic configured at "/admin/config/regional/content-language" is applied.
 POST /jsonapi/node/article
 {type: "node--article"}
 
@@ -106,7 +107,6 @@ Location: /jsonapi/node/article/{id}
 * New translation of existing article, only translatable field values can be
 posted in this case:
 ```
-
 POST /jsonapi/node/article/{id}
 Content-Language: fr
 {attributes: {...}}
@@ -131,7 +131,7 @@ Content-Language: fr
 422 Unprocessable entity
 ```
 ```
-// A French translation already exsists:
+// A French translation already exists:
 POST /jsonapi/node/article/{id}
 Content-Language: fr
 {attributes: {...}}
@@ -166,7 +166,6 @@ Location: /jsonapi/node/article/{id}?lang=nl
 
 * Change article, no translations:
 ```
-
 PATCH /jsonapi/node/article/{id}
 {attributes: {...}}
 
@@ -175,7 +174,6 @@ PATCH /jsonapi/node/article/{id}
 
 * Change article, default translation:
 ```
-
 PATCH /jsonapi/node/article/{id}
 {attributes: {...}}
 
@@ -185,7 +183,6 @@ PATCH /jsonapi/node/article/{id}
 * Change article, non-default translation, only translatable field values can be
 posted in this case:
 ```
-
 PATCH /jsonapi/node/article/{id}?lang=fr
 {attributes: {...}}
 
@@ -195,7 +192,7 @@ PATCH /jsonapi/node/article/{id}?lang=fr
 // If French translation does not exist:
 404 Not Found
 
-// If an unstranslatable field value is specified:
+// If an untranslatable field value is specified:
 422 Unprocessable entity
 ```
 ```
@@ -206,37 +203,33 @@ PATCH /jsonapi/node/article/{id}?lang=fr
 Content-Language: en
 {attributes: {...}}
 
-400 Bad Request
+422 Unprocessable entity
 ```
 ```
 PATCH /jsonapi/node/article/{id}?lang=fr
 {attributes: {langcode: "en", ...}}
 
-400 Bad Request
+422 Unprocessable entity
 ```
 ```
 PATCH /jsonapi/node/article/{id}?lang=fr
 Content-Language: fr
 {attributes: {langcode: "en", ...}}
 
-400 Bad Request
+422 Unprocessable entity
 ```
 ```
 PATCH /jsonapi/node/article/{id}?lang=fr
 Content-Language: fr
 {attributes: {langcode: "fr", ...}}
 
-200 OK
-// or
 204 No content
-// see https://jsonapi.org/format/#crud-updating-responses-204
 ```
 
 # DELETE
 
 * Remove article, no translations:
 ```
-
 DELETE /jsonapi/node/article/{id}
 
 204 No content
@@ -244,7 +237,6 @@ DELETE /jsonapi/node/article/{id}
 
 * Remove article, all translations:
 ```
-
 DELETE /jsonapi/node/article/{id}
 
 204 No content
@@ -262,16 +254,14 @@ Content-Language: en
 
 * Removing the default translation of an existing article is not supported:
 ```
-
 DELETE /jsonapi/node/article/{id}?lang=en
 
 400 Bad Request
 ```
 
-* Remove non-default translation of existing article:
+* Remove a non-default translation of an existing article:
 
 ```
-
 DELETE /jsonapi/node/article/{id}?lang=fr
 
 // If French translation exists:
