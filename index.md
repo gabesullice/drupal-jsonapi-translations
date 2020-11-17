@@ -22,7 +22,7 @@ Accept-Language: fr
 // If translation exists:
 200 OK
 Content-Language: fr
-Location: /jsonapi/node/article/{id}?lang=fr
+Content-Location: /jsonapi/node/article/{id}?lang=fr
 
 // If translation does not exist:
 // option a)
